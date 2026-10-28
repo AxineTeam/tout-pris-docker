@@ -236,6 +236,20 @@ la loopback de l'hôte, aucun client extérieur ne peut atteindre l'API
 autrement qu'à travers nginx, qui réécrit `X-Forwarded-Proto` à chaque requête :
 personne n'est en position de mentir sur le protocole.
 
+### `WEB_CONCURRENCY` et `memcached`
+
+L'API ne décide pas combien de processus elle démarre : gunicorn lit
+`WEB_CONCURRENCY`, donc c'est le compose qui dimensionne, deux par défaut, et
+cette machine-ci peut en servir plus sans qu'une image soit republiée.
+
+Au-delà d'un seul, il lui faut `MEMCACHED_LOCATION`. Le cache de Django est
+local au processus, et django-allauth y tient les compteurs de ses limitations :
+sans cache partagé chaque worker les applique pour lui seul et en laisse passer
+autant qu'il y a de processus. L'API refuse de démarrer sur cette combinaison
+plutôt que de diviser les limites en silence, d'où le service `memcached` —
+64 Mo de RAM, rien sur le disque, rien à sauvegarder : son contenu se
+reconstitue, et le perdre ne remet à zéro que des compteurs d'une minute.
+
 ### Limitation de débit
 
 Django ne voit pas l'adresse du client. `REMOTE_ADDR` lui vient de
