@@ -1,10 +1,9 @@
 # tout-pris-docker
 
-Déploiement de la stack **Tout Pris** : l'API
-[`tout-pris-api`](https://github.com/AxineTeam/tout-pris-api) (Django, servie
-en ASGI par gunicorn supervisant des workers uvicorn) et le front
-[`tout-pris-front`](https://github.com/AxineTeam/tout-pris-front) (SvelteKit
-statique).
+Déploiement de la stack **Tout Pris** :
+
+- API [`tout-pris-api`](https://github.com/AxineTeam/tout-pris-api)
+- front [`tout-pris-front`](https://github.com/AxineTeam/tout-pris-front)
 
 Ce dépôt ne contient pas de code applicatif :
 
@@ -249,6 +248,16 @@ autant qu'il y a de processus. L'API refuse de démarrer sur cette combinaison
 plutôt que de diviser les limites en silence, d'où le service `memcached` —
 64 Mo de RAM, rien sur le disque, rien à sauvegarder : son contenu se
 reconstitue, et le perdre ne remet à zéro que des compteurs d'une minute.
+
+```sh
+# Voir les thread tourner on est sensé voir n+1 worker lignes
+> docker top tout-pris-api
+```
+
+```sh
+# Voir si le cache AllAuth est correctement utilisé si c'est différent de 0 c'est bon
+sudo docker compose exec memcached sh -c 'echo stats | nc -w 1 localhost 11211' | grep -E 'cmd_get|cmd_set|curr_items'
+```
 
 ### Limitation de débit
 
