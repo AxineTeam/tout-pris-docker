@@ -236,6 +236,18 @@ la loopback de l'hôte, aucun client extérieur ne peut atteindre l'API
 autrement qu'à travers nginx, qui réécrit `X-Forwarded-Proto` à chaque requête :
 personne n'est en position de mentir sur le protocole.
 
+### Limitation de débit
+
+Django ne voit pas l'adresse du client. `REMOTE_ADDR` lui vient de
+`X-Forwarded-For`, que le RP frontal ajoute *derrière* ce que l'appelant a
+envoyé, et uvicorn — à qui `FORWARDED_ALLOW_IPS: "*"` dit de tout croire —
+retient la première valeur de la liste, donc celle que l'appelant a posée
+lui-même. Les limitations par IP de django-allauth (`signup`, `login`,
+`reset_password_from_key`) ne protègent par conséquent de rien : la limitation
+de débit a sa place sur le RP frontal, le seul à voir l'adresse réelle. Celles
+portées par l'identifiant, dont le `5/300s/key` de `login_failed`, tiennent
+dans tous les cas.
+
 ### Le healthcheck de l'API
 
 Il appelle `/api/health/` — et non `/health`, qui était le chemin du temps de
