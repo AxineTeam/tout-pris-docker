@@ -2,7 +2,7 @@
 
 Déploiement de la stack **Tout Pris** : l'API
 [`tout-pris-api`](https://github.com/AxineTeam/tout-pris-api) (Django, servie
-par gunicorn) et le front
+en ASGI par gunicorn supervisant des workers uvicorn) et le front
 [`tout-pris-front`](https://github.com/AxineTeam/tout-pris-front) (SvelteKit
 statique).
 
@@ -218,19 +218,21 @@ Le service `watchtower` commenté en fin de fichier est décrit plus bas, dans
 C'est la variable la moins évidente du fichier, et celle sans laquelle le site
 entier part en boucle de redirection.
 
-L'API ne définit pas `SECURE_PROXY_SSL_HEADER` : c'est donc gunicorn qui
+L'API ne définit pas `SECURE_PROXY_SSL_HEADER` : c'est donc le serveur qui
 décide si Django se croit en HTTPS, en traduisant l'en-tête `X-Forwarded-Proto`
-que pose le vhost. Or gunicorn n'accorde foi à cet en-tête que s'il vient d'une
-adresse de confiance — `127.0.0.1` par défaut. Les requêtes de nginx entrent
-dans le conteneur par la passerelle du réseau Docker et non par la loopback :
-l'en-tête est donc ignoré, et Django se croit en clair derrière le TLS. Comme
-`SECURE_SSL_REDIRECT` est actif dès que `DJANGO_DEBUG` vaut `false`, chaque
-requête repart alors en 301 vers `https`, c'est-à-dire vers nginx, qui la
+que pose le vhost. L'image sert l'application en ASGI — gunicorn supervise, et
+c'est uvicorn qui parle le protocole : la traduction est faite par le
+`ProxyHeadersMiddleware` d'uvicorn, qui lit la liste des adresses de confiance
+dans la configuration de gunicorn, `127.0.0.1` par défaut. Les requêtes de
+nginx entrent dans le conteneur par la passerelle du réseau Docker et non par
+la loopback : l'en-tête est donc ignoré, et Django se croit en clair derrière le
+TLS. Comme `SECURE_SSL_REDIRECT` est actif dès que `DJANGO_DEBUG` vaut `false`,
+chaque requête repart alors en 301 vers `https`, c'est-à-dire vers nginx, qui la
 repasse à Django, qui la redirige encore : une boucle de redirection sur la
 totalité du site.
 
 `FORWARDED_ALLOW_IPS: "*"` lève la restriction. Le port n'étant publié que sur
-la loopback de l'hôte, aucun client extérieur ne peut atteindre gunicorn
+la loopback de l'hôte, aucun client extérieur ne peut atteindre l'API
 autrement qu'à travers nginx, qui réécrit `X-Forwarded-Proto` à chaque requête :
 personne n'est en position de mentir sur le protocole.
 
