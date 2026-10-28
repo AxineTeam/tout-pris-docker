@@ -17,6 +17,10 @@ services:
       MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-no-reply@tout-pris.app}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tout Pris}
       FORWARDED_ALLOW_IPS: "*"
+      MEMCACHED_LOCATION: memcached:11211
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    depends_on:
+      - memcached
     volumes:
       - ./data:/data
     labels:
@@ -28,6 +32,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  memcached:
+    container_name: tout-pris-memcached
+    image: memcached:alpine
+    restart: unless-stopped
+    command: ["-m", "64"]
 
   front:
     container_name: tout-pris-front
