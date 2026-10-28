@@ -26,8 +26,13 @@ services:
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto': 'https'}), timeout=3)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto': 'https'}), timeout=3)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -53,14 +58,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-
-  # watchtower:
-  #   image: containrrr/watchtower:latest
-  #   restart: unless-stopped
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   environment:
-  #     WATCHTOWER_LABEL_ENABLE: "true"
-  #     WATCHTOWER_SCHEDULE: "0 0 4 * * *"
-  #     WATCHTOWER_CLEANUP: "true"
-  #     TZ: Europe/Paris
